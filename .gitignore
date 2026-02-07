@@ -1,0 +1,15 @@
+# Sub-repos have their own git
+protocol/
+solver/
+watchtower/
+agent-passkey/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
