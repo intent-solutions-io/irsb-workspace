@@ -23,7 +23,7 @@ IRSB has a comprehensive on-chain reputation system (CredibilityRegistry with In
 
 ### Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                    ERC-8004 (Signal Registry)                   │
 │  - Stores raw validation signals from many providers            │
@@ -82,7 +82,7 @@ Query ERC-8004 for cross-protocol reputation:
 
 IRSB uses 0-10000 basis points internally. When publishing to ERC-8004:
 
-```
+```text
 ERC-8004 Signal = IRSB IntentScore / 100
 
 Example: IntentScore 7,850 → ERC-8004 Signal 78

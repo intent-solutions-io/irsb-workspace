@@ -10,7 +10,7 @@ IRSB aims to become **Ethereum's global accountability layer for intent-based tr
 
 ## Strategic Position
 
-```
+```text
                     ┌─────────────────────────────────────┐
                     │       IRSB: Global Accountability   │
                     │       "Stamp of Approval"           │
@@ -42,7 +42,7 @@ ERC-8004 stores raw signals but **intentionally doesn't aggregate them**. This i
 
 IRSB provides the **authoritative aggregation for intent execution**:
 
-```
+```text
 IntentScore Formula:
   40% × Success Rate (finalized receipts / total)
 + 25% × Dispute Win Rate (wins + 50% partials)
@@ -109,16 +109,15 @@ export ERC8004_PRIVATE_KEY=0x...  # For publishing signals
 
 ## Signal Flow Diagram
 
-```
-IRSB Event                   ERC-8004 Signal              Value
-─────────────────────────────────────────────────────────────────
-Receipt finalized (no dispute) → giveFeedback()           +100
-Dispute opened                 → (no signal, wait)          -
-Dispute won by solver          → giveFeedback()            +90
-Dispute lost, minor            → giveFeedback()            -30
-Dispute lost, major            → giveFeedback()            -50
-Solver slashed                 → giveFeedback()            -80
-Solver jailed                  → giveFeedback()           -100
+```text
+IRSB Event                       ERC-8004 Signal              Value
+───────────────────────────────────────────────────────────────────
+Receipt finalized (no dispute) → validationResponse()        +100
+Dispute opened against solver  → giveFeedback()               -10
+Dispute won by solver          → validationResponse()         +90
+Dispute lost, minor slash      → validationResponse()         +30
+Dispute lost, full slash       → validationResponse()           0
+Solver jailed                  → giveFeedback()               -50
 ```
 
 ## Bond Modifier Table
@@ -127,9 +126,10 @@ Solver jailed                  → giveFeedback()           -100
 |--------------------|---------------|----------------|-----------|
 | 90-100 | 0.5× | 0.05 ETH | Excellent cross-protocol reputation |
 | 70-89 | 0.75× | 0.075 ETH | Good cross-protocol reputation |
-| 50-69 | 1.0× | 0.1 ETH | Standard (moderate or no history) |
+| 50-69 | 1.0× | 0.1 ETH | Standard (moderate history) |
 | 30-49 | 1.5× | 0.15 ETH | Elevated (low reputation) |
 | 0-29 | 2.0× | 0.2 ETH | Maximum (poor reputation) |
+| No history | 1.0× | 0.1 ETH | Standard (new solver, no cross-protocol data) |
 
 ## ERC-8004 Contract Addresses
 

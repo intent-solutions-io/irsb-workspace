@@ -40,7 +40,7 @@
 
 ## Architecture Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │  ERC-8004 (Registry Layer) - Agent identity & reputation        │
 │  - Agent identity registry (24,549+ agents on mainnet)          │
@@ -82,7 +82,7 @@
 |------|------------|
 | **Intent Receipt** | On-chain proof of intent execution. Contains intentHash, constraintsHash, evidenceHash, solver signature. |
 | **Solver Bond** | Staked ETH collateral (min 0.1 ETH) slashable for violations. Creates economic accountability. |
-| **Challenge Window** | 1 hour period after receipt posting where disputes can be opened. |
+| **Challenge Window** | 1-hour period after receipt posting where disputes can be opened. |
 | **Typed Actions** | `SUBMIT_RECEIPT`, `OPEN_DISPUTE`, `SUBMIT_EVIDENCE` - the only signing operations allowed. |
 | **Lit Protocol PKP** | Programmable Key Pairs - threshold signatures across 2/3 TEE nodes. Non-extractable keys. |
 | **ERC-8004** | Ethereum standard for trustless agent identity with identity, reputation, and validation registries. |
@@ -92,7 +92,7 @@
 
 ## Cross-Repo Dependencies
 
-```
+```text
 protocol → (ABI/types) → solver, watchtower
 agent-passkey → (signing client) → solver, watchtower
 ```
@@ -183,7 +183,7 @@ agent-passkey → (signing client) → solver, watchtower
 
 ## Local Workspace Structure
 
-```
+```text
 ~/000-projects/irsb/
 ├── protocol/           # On-chain Solidity contracts
 ├── solver/             # Reference off-chain solver
@@ -215,12 +215,14 @@ Ethereum standard for **trustless agent discovery and verification**. Enables ag
 ### ERC-8004 Contract Addresses
 
 **Mainnet (Ethereum, Base, Polygon, Arbitrum, Celo, Gnosis, Scroll, Taiko, Monad, BSC):**
+
 | Contract | Address |
 |----------|---------|
 | IdentityRegistry | `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` |
 | ReputationRegistry | `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63` |
 
 **Sepolia (Ethereum, Base, Polygon, Arbitrum, Scroll, BSC testnets):**
+
 | Contract | Address |
 |----------|---------|
 | IdentityRegistry | `0x8004A818BFB912233c491871b3d84c89A494BD9e` |
@@ -269,16 +271,21 @@ function validationResponse(bytes32 hash, uint8 response, string uri, bytes32 ev
 
 ### IRSB + ERC-8004 Integration Strategy
 
-**IRSB as a Validation Provider:**
-1. Register IRSB as a Validation Provider in ERC-8004
-2. When receipts finalize → call `validationResponse` with success signal
-3. When disputes are won → call `validationResponse` with failure signal
-4. Link IRSB evidence bundles via `responseURI`
+**IRSB as a Signal Publisher (see ADR-001 for full signal table):**
+
+| IRSB Event | ERC-8004 Signal | Value |
+|------------|-----------------|-------|
+| Receipt finalized (no dispute) | `validationResponse` | 100 |
+| Dispute opened against solver | `giveFeedback` | -10 |
+| Dispute won by solver | `validationResponse` | 90 |
+| Dispute lost, minor slash | `validationResponse` | 30 |
+| Dispute lost, full slash | `validationResponse` | 0 |
+| Solver jailed | `giveFeedback` | -50 |
 
 **Reputation-Weighted Bonds:**
 1. Query solver's ERC-8004 reputation before accepting bond
-2. High reputation → lower bond requirements (configurable)
-3. Low/no reputation → standard bond (0.1 ETH)
+2. High reputation → lower bond requirements (0.5× to 2.0× modifier)
+3. No history → standard bond (0.1 ETH)
 
 **Agent Identity Resolution:**
 1. Solver provides ERC-8004 `agentId` when registering
@@ -300,7 +307,7 @@ function validationResponse(bytes32 hash, uint8 response, string uri, bytes32 ev
 
 ### IntentScore Algorithm
 
-```
+```text
 Score = (40% × SuccessRate) + (25% × DisputeWinRate) + (20% × StakeFactor) + (15% × Longevity) - SlashPenalty
 ```
 

@@ -35,7 +35,7 @@ FOUNDRY_PROFILE=ci forge test --match-path "test/fuzz/*.sol"
 # SDK and sub-packages
 cd sdk && pnpm build && pnpm test
 cd packages/x402-irsb && pnpm build && pnpm test
-cd dashboard && pnpm dev              # Next.js dashboard
+cd dashboard && pnpm dev              # Next.js dashboard (in protocol/)
 ```
 
 ### Solver (single TypeScript project)
@@ -110,7 +110,7 @@ Tests in separate `test/` directory with subdirs: `unit/`, `integration/`, `secu
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │  ERC-8004 (Registry Layer) - Agent identity & reputation       │
 └─────────────────────┬───────────────────────────────────────────┘
@@ -138,7 +138,7 @@ Tests in separate `test/` directory with subdirs: `unit/`, `integration/`, `secu
 
 ## Cross-Project Dependencies and Update Order
 
-```
+```text
 protocol → (ABI/types) → solver, watchtower
 agent-passkey → (signing client) → solver, watchtower
 ```
