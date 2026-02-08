@@ -1,49 +1,124 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with the IRSB ecosystem.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+> **AI Context**: For ecosystem-wide reference (contracts, deployments, concepts, glossary), see [AI-CONTEXT.md](./AI-CONTEXT.md). Each sub-project also has its own CLAUDE.md with project-specific rules.
 
 ## Workspace Overview
 
-**IRSB (Intent Receipts & Solver Bonds)** is Ethereum's accountability layer for intent-based transactions. This workspace contains all IRSB projects in a unified structure.
+**IRSB (Intent Receipts & Solver Bonds)** is Ethereum's accountability layer for intent-based transactions. This is a multi-project workspace containing four repos in a unified structure.
 
-## Project Structure
+| Project | Tech Stack | Purpose | Status |
+|---------|------------|---------|--------|
+| `protocol/` | Solidity 0.8.25, Foundry | On-chain contracts (receipts, bonds, disputes, escrow) | Deployed (Sepolia) |
+| `solver/` | TypeScript, Express | Execute intents, produce evidence, submit receipts | Development |
+| `watchtower/` | TypeScript, Fastify (pnpm monorepo) | Monitor receipts, detect violations, file disputes | v0.3.0 |
+| `agent-passkey/` | TypeScript, Fastify | Policy-gated signing via Lit Protocol PKP | Live (Cloud Run) |
 
+## Build, Test, Lint Commands
+
+### Protocol (Foundry/Solidity)
+
+```bash
+cd protocol/
+forge build                           # Compile (via_ir, optimizer 200 runs)
+forge test                            # All 308 tests
+forge test -vvv                       # Verbose output
+forge test --match-test testSlashing  # Single test by name
+forge test --match-path "test/EscrowVault.t.sol"  # Single test file
+forge test --gas-report               # Gas analysis
+forge fmt                             # Format Solidity
+
+# CI fuzz profile (10k runs instead of default 256)
+FOUNDRY_PROFILE=ci forge test --match-path "test/fuzz/*.sol"
+
+# SDK and sub-packages
+cd sdk && pnpm build && pnpm test
+cd packages/x402-irsb && pnpm build && pnpm test
+cd dashboard && pnpm dev              # Next.js dashboard (in protocol/)
 ```
-irsb/
-├── protocol/        # On-chain Solidity contracts
-├── solver/          # Reference off-chain solver
-├── watchtower/      # Monitoring and dispute service
-└── agent-passkey/   # Policy-gated signing gateway (NEW)
+
+### Solver (single TypeScript project)
+
+```bash
+cd solver/
+pnpm install
+pnpm build              # tsc
+pnpm test               # vitest run
+pnpm test:watch         # vitest (watch mode)
+pnpm test:coverage      # vitest run --coverage
+pnpm lint               # eslint src/
+pnpm lint:fix
+pnpm format             # prettier
+pnpm typecheck          # tsc --noEmit
+pnpm dev                # tsx watch src/index.ts
+pnpm dev:server         # tsx watch src/main.ts (HTTP server)
+pnpm cli                # tsx src/cli.ts (Commander CLI)
 ```
 
-## Project Quick Reference
+Tests are **co-located** with source: `src/**/*.test.ts`
 
-| Project | Tech Stack | Primary Use | Status |
-|---------|------------|-------------|--------|
-| `protocol/` | Solidity, Foundry | Smart contracts for receipts, bonds, disputes | ✅ Deployed (Sepolia) |
-| `solver/` | TypeScript, Node.js | Execute intents, submit receipts | 🚧 Development |
-| `watchtower/` | TypeScript, Node.js | Monitor receipts, file disputes | ✅ v0.3.0 |
-| `agent-passkey/` | TypeScript, Fastify | Policy-gated signing (Lit Protocol) | ✅ Live |
+### Watchtower (pnpm workspace monorepo)
 
-## Live Deployments
+```bash
+cd watchtower/
+pnpm install
+pnpm build              # Build all packages + apps
+pnpm test               # Run all tests across workspace
+pnpm typecheck          # TypeScript check all packages
+pnpm lint               # ESLint all packages
+pnpm format             # Prettier all packages
 
-| Service | URL | Network |
-|---------|-----|---------|
-| Agent Passkey | https://irsb-agent-passkey-308207955734.us-central1.run.app | GCP Cloud Run |
-| Protocol Contracts | See `protocol/deployments/` | Sepolia |
+# Development
+pnpm dev:api            # Fastify API on :3000
+pnpm dev:worker         # Background scanner
 
-**GCP Project:** `irsb-protocol` (project number: 308207955734)
+# Single package operations (use --filter)
+pnpm --filter @irsb-watchtower/core test
+pnpm --filter @irsb-watchtower/core test:watch
+pnpm --filter @irsb-watchtower/core vitest run receiptStaleRule   # Single test file
+pnpm --filter @irsb-watchtower/api build
+
+# Canonical hash drift check
+pnpm canonical:check
+pnpm canonical:refresh
+```
+
+**Workspace layout** (`pnpm-workspace.yaml` defines `packages/*` and `apps/*`):
+- **Packages**: `core`, `config`, `chain`, `irsb-adapter`, `signers`, `resilience`, `webhook`, `evidence-store`, `metrics`
+- **Apps**: `api` (Fastify), `worker` (scanner), `cli` (health/config/simulate)
+- Internal deps use `workspace:*` protocol
+- Tests per package in `test/` directories, discovered via `vitest.workspace.ts`
+
+### Agent Passkey (single TypeScript project)
+
+```bash
+cd agent-passkey/
+pnpm install
+pnpm build              # tsc
+pnpm test               # vitest run
+pnpm test:watch
+pnpm test:coverage      # Coverage with thresholds (25% statements, 50% branches)
+pnpm lint               # eslint src
+pnpm lint:fix
+pnpm format             # prettier
+pnpm typecheck          # tsc --noEmit
+pnpm dev                # tsx watch src/server/gateway.ts
+```
+
+Tests in separate `test/` directory with subdirs: `unit/`, `integration/`, `security/`
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │  ERC-8004 (Registry Layer) - Agent identity & reputation       │
 └─────────────────────┬───────────────────────────────────────────┘
                       │
 ┌─────────────────────┴───────────────────────────────────────────┐
 │  IRSB Protocol (protocol/) - On-chain accountability           │
-│  - Intent receipts, solver bonds, dispute resolution           │
+│  - Intent receipts (V1 single-sig, V2 dual attestation)        │
+│  - Solver bonds, disputes, escrow                              │
 └──────────┬────────────────────────────┬─────────────────────────┘
            │                            │
 ┌──────────┴──────────┐    ┌────────────┴────────────┐
@@ -53,7 +128,7 @@ irsb/
 └──────────┬──────────┘    └────────────┬────────────┘
            │                            │
            └──────────┬─────────────────┘
-                      │
+                      │ typed actions only
 ┌─────────────────────┴───────────────────────────────────────────┐
 │  Agent Passkey (agent-passkey/) - Identity plane               │
 │  - Lit Protocol PKP (2/3 threshold signatures)                 │
@@ -61,117 +136,54 @@ irsb/
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Common Commands
+## Cross-Project Dependencies and Update Order
 
-### Protocol (Foundry/Solidity)
-
-```bash
-cd protocol/
-forge build           # Compile contracts
-forge test            # Run tests
-forge script ...      # Deploy scripts
-```
-
-### Solver
-
-```bash
-cd solver/
-pnpm install
-pnpm test             # Run tests
-pnpm dev              # Development mode
-```
-
-### Watchtower
-
-```bash
-cd watchtower/
-pnpm install
-pnpm test             # Run tests
-pnpm dev              # Development mode
-```
-
-### Agent Passkey
-
-```bash
-cd agent-passkey/
-pnpm install
-pnpm test             # Run tests
-pnpm dev              # Development server
-```
-
-## Cross-Project Dependencies
-
-```
+```text
 protocol → (ABI/types) → solver, watchtower
 agent-passkey → (signing client) → solver, watchtower
 ```
 
-When making changes:
-1. Update `protocol/` first if contract interfaces change
+When contract interfaces change:
+1. Update `protocol/` first
 2. Regenerate types for TypeScript projects
 3. Update `agent-passkey/` if signing interface changes
 4. Update `solver/` and `watchtower/` last
 
-## Task Tracking (Beads)
+## Signing: Always Via Agent Passkey
 
-Each project has its own beads configuration. Use the project-level `bd` commands:
+**No local signing in production.** Solver and watchtower submit typed actions (`SUBMIT_RECEIPT`, `OPEN_DISPUTE`, `SUBMIT_EVIDENCE`) to agent-passkey, which validates policy, builds transactions, signs with Lit PKP, and produces audit artifacts. See `agent-passkey/CLAUDE.md` for API details.
 
-```bash
-# In any project directory
-bd ready              # Available tasks
-bd list --status in_progress
-bd sync               # Sync with git
-```
+## Common Patterns Across TypeScript Projects
 
-## Key Concepts
+| Pattern | Implementation |
+|---------|----------------|
+| Config validation | Zod schemas, fail-fast on startup |
+| Logging | pino with structured JSON, correlation IDs (`intentId`, `runId`, `receiptId`) |
+| Testing | vitest for all TypeScript projects |
+| Determinism | Canonical JSON serialization for hashing (sorted keys, no whitespace) |
+| CI/CD | GitHub Actions + Workload Identity Federation (keyless GCP auth) |
+| TypeScript | ES2022 target, strict mode, all strict flags enabled |
+| Commits | Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`, `refactor:`, `perf:`) |
 
-### Intent Receipts
-Cryptographic proof that a solver executed an intent correctly. Submitted on-chain with evidence hash.
+## Live Deployments
 
-### Solver Bonds
-Staked collateral that can be slashed if a solver misbehaves. Creates economic accountability.
+| Service | URL/Address | Network |
+|---------|-------------|---------|
+| Agent Passkey | `https://irsb-agent-passkey-308207955734.us-central1.run.app` | GCP Cloud Run |
+| SolverRegistry | `0xB6ab964832808E49635fF82D1996D6a888ecB745` | Sepolia |
+| IntentReceiptHub | `0xD66A1e880AA3939CA066a9EA1dD37ad3d01D977c` | Sepolia |
+| DisputeModule | `0x144DfEcB57B08471e2A75E78fc0d2A74A89DB79D` | Sepolia |
+| ERC-8004 Agent ID | `967` (on `0x8004A818BFB912233c491871b3d84c89A494BD9e`) | Sepolia |
 
-### Disputes
-Watchtowers can challenge receipts by opening disputes. Arbitration determines if the solver's bond is slashed.
-
-### Agent Passkey
-Policy-gated signing service using **Lit Protocol PKP** (Programmable Key Pairs). Agents submit high-level actions (SUBMIT_RECEIPT, OPEN_DISPUTE, SUBMIT_EVIDENCE), not raw transaction data. The service:
-- Validates against policy (allowlists, limits, role auth)
-- Builds complete transactions (owns nonce management)
-- Signs with Lit Protocol threshold signatures (2/3 TEE nodes)
-- Produces deterministic audit artifacts
-
-**Why Lit Protocol?** Non-extractable keys distributed across decentralized TEE nodes. No single point of key compromise. Aligns with blockchain's trust model.
-
-## Environment Setup
-
-### GCP Authentication
-
-All projects use GCP services:
-
-```bash
-gcloud auth application-default login
-gcloud config set project your-project-id
-```
-
-### Local Development
-
-Each project has its own `.env.example`. Copy and configure:
-
-```bash
-cp .env.example .env
-```
+**GCP Project:** `irsb-protocol` (308207955734)
 
 ## Documentation
 
-Each project has a `000-docs/` directory with:
-- ADRs (Architecture Decision Records)
-- Specifications
-- Guides
+Each project has a flat `000-docs/` directory (no subdirectories). Files follow naming convention: `NNN-CC-ABCD-short-description.md` (CC = category code like DR/AT/OD).
 
 ## GitHub Repositories
 
-All repos are under `intent-solutions-io`:
+All repos under `intent-solutions-io`:
 - [irsb-protocol](https://github.com/intent-solutions-io/irsb-protocol)
 - [irsb-solver](https://github.com/intent-solutions-io/irsb-solver)
 - [irsb-watchtower](https://github.com/intent-solutions-io/irsb-watchtower)
