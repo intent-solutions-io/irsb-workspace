@@ -137,7 +137,7 @@ agent-passkey → (signing client) → solver, watchtower
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `LIT_NETWORK` | Lit Protocol network (`datil-dev`, `habanero`, `manzano`) | Yes |
+| `LIT_NETWORK` | Lit Protocol network (`naga-dev`, `naga-test`, `naga`) | Yes |
 | `LIT_AUTH_PRIVATE_KEY` | Auth wallet for session signatures | Yes |
 | `LIT_PKP_PUBLIC_KEY` | PKP public key (uncompressed) | Yes |
 | `AUTH_AUDIENCE` | JWT audience | `irsb-agent-passkey` |
@@ -382,8 +382,8 @@ These are included in solver/watchtower evidence bundles and referenced in dispu
 
 ## Lit Protocol Notes
 
-**Current Network:** `datil-dev` (testing)
-**Deprecation Warning:** Datil networks deprecated Feb 25, 2026. Migrate to `habanero` (mainnet) or `manzano` (testnet).
+**Current Network:** `naga-dev` (development)
+**Note:** Migrated from Datil (V0) to Naga (V1). Datil networks shut down Feb 25, 2026.
 
 **How it works:**
 - PKP keys live in 2/3 TEE nodes (no single point of compromise)
