@@ -173,6 +173,7 @@ When contract interfaces change:
 | SolverRegistry | `0xB6ab964832808E49635fF82D1996D6a888ecB745` | Sepolia |
 | IntentReceiptHub | `0xD66A1e880AA3939CA066a9EA1dD37ad3d01D977c` | Sepolia |
 | DisputeModule | `0x144DfEcB57B08471e2A75E78fc0d2A74A89DB79D` | Sepolia |
+| ERC-8004 Agent ID | `967` (on `0x8004A818BFB912233c491871b3d84c89A494BD9e`) | Sepolia |
 
 **GCP Project:** `irsb-protocol` (308207955734)
 

@@ -35,6 +35,7 @@
 |---------|---------|---------|
 | Deployer/Operator | `0x83A5F432f02B1503765bB61a9B358942d87c9dc0` | Signs receipts, pays gas |
 | Solver ID | `0xdf816d7b86303c3452e53d84aaa02c01b0de6ae23c1e518bd2642870f9f7603b` | Registered solver identifier |
+| ERC-8004 Agent ID | `967` (on IdentityRegistry `0x8004A818BFB912233c491871b3d84c89A494BD9e`) | Agent identity NFT |
 | Safe (Owner) | `0xBcA0c8d0B5ce874a9E3D84d49f3614bb79189959` | Owns contracts (2/3 multisig) |
 
 ## Architecture Overview
@@ -317,6 +318,7 @@ Score = (40% × SuccessRate) + (25% × DisputeWinRate) + (20% × StakeFactor) + 
 
 | Component | Location | Status |
 |-----------|----------|--------|
+| Agent registration | `protocol/script/RegisterERC8004Agent.s.sol` | **Registered (Agent ID: 967)** |
 | On-chain adapter | `protocol/src/adapters/ERC8004Adapter.sol` | Deployed (350 lines) |
 | Off-chain adapter | `agent-passkey/src/erc8004/adapter.ts` | Implemented (400+ lines) |
 | CredibilityRegistry | `protocol/src/CredibilityRegistry.sol` | Active (450+ lines) |
