@@ -1,12 +1,42 @@
-# IRSB — Intent Receipts & Solver Bonds
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/irsb-banner-dark.svg">
+    <img alt="IRSB — Intent Receipts & Solver Bonds" src="assets/irsb-banner-light.svg" width="800">
+  </picture>
+</p>
 
-**Ethereum's accountability layer for intent-based transactions.**
+<p align="center">
+  <a href="https://github.com/intent-solutions-io/irsb/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-0ea5e9?style=flat-square" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/Solidity-0.8.25-363636?style=flat-square&logo=solidity" alt="Solidity 0.8.25">
+  <img src="https://img.shields.io/badge/TypeScript-5.x-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Ethereum-Sepolia-0ea5e9?style=flat-square&logo=ethereum&logoColor=white" alt="Ethereum Sepolia">
+  <img src="https://img.shields.io/badge/ERC--8004-Agent%20%23967-38bdf8?style=flat-square" alt="ERC-8004 Agent #967">
+</p>
 
-Intent protocols like UniswapX, CoW Protocol, and 1inch Fusion route user orders through off-chain solvers — but today there are zero consequences for front-running, delayed fills, or partial execution. IRSB adds cryptographic receipts, staked bonds, and on-chain dispute resolution so every solver action is accountable.
+---
+
+> **Intent protocols like UniswapX, CoW Protocol, and 1inch Fusion route user orders through off-chain solvers — but today there are zero consequences for front-running, delayed fills, or partial execution.** IRSB adds cryptographic receipts, staked bonds, and on-chain dispute resolution so every solver action is accountable.
 
 ## How It Works
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#0ea5e9',
+  'primaryBorderColor': '#0284c7',
+  'primaryTextColor': '#ffffff',
+  'lineColor': '#38bdf8',
+  'secondaryColor': '#0c1929',
+  'tertiaryColor': '#e5e7eb',
+  'noteBkgColor': '#0c4a6e',
+  'noteTextColor': '#e5e7eb',
+  'actorBkg': '#0ea5e9',
+  'actorBorder': '#0284c7',
+  'actorTextColor': '#ffffff',
+  'signalColor': '#38bdf8',
+  'signalTextColor': '#e5e7eb',
+  'activationBkgColor': '#0c4a6e',
+  'activationBorderColor': '#0ea5e9'
+}}}%%
 sequenceDiagram
     participant U as User
     participant S as Solver
@@ -34,6 +64,16 @@ sequenceDiagram
 ## Architecture
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#0ea5e9',
+  'primaryBorderColor': '#0284c7',
+  'primaryTextColor': '#ffffff',
+  'lineColor': '#38bdf8',
+  'secondaryColor': '#0c1929',
+  'tertiaryColor': '#e5e7eb',
+  'clusterBkg': '#0c192910',
+  'clusterBorder': '#0ea5e9'
+}}}%%
 flowchart TB
     subgraph ERC8004["ERC-8004 Identity Layer"]
         REG["Identity Registry — Agent #967"]
@@ -90,7 +130,8 @@ flowchart TB
 | [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) | Trustless agent identity — IRSB publishes reputation signals to the on-chain registry |
 | [x402](https://www.x402.org/) | HTTP payment protocol — IRSB solver can serve as an x402-compatible payment facilitator |
 
-## Protocol Parameters
+<details>
+<summary><strong>Protocol Parameters</strong></summary>
 
 | Parameter | Value |
 |-----------|-------|
@@ -101,7 +142,10 @@ flowchart TB
 | Counter-Bond Window | 24 hours |
 | Arbitration Timeout | 7 days |
 
-## Getting Started
+</details>
+
+<details>
+<summary><strong>Getting Started</strong></summary>
 
 ```bash
 # Clone the workspace (docs + cross-cutting research)
@@ -121,6 +165,8 @@ cd ../solver && pnpm install && pnpm build && pnpm test
 ```
 
 Each repo has its own README and CLAUDE.md with detailed setup and contribution instructions.
+
+</details>
 
 ## Documentation
 
