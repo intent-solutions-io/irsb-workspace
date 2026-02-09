@@ -17,9 +17,8 @@
 
 | Service | URL | Status |
 |---------|-----|--------|
-| **Agent Passkey** | https://irsb-agent-passkey-308207955734.us-central1.run.app | Production |
-| **Health Check** | `/health` returns `{"status":"ok"}` | |
 | **Protocol Contracts** | See addresses below | Sepolia |
+| **Agent Passkey** (legacy) | https://irsb-agent-passkey-308207955734.us-central1.run.app | Deprecated (still running) |
 
 ## Contract Addresses (Sepolia)
 
@@ -55,6 +54,9 @@
 │  - Solver bonds (0.1 ETH minimum)                               │
 │  - Dispute resolution (1hr challenge window)                    │
 │  - Escrow (ETH + ERC20)                                         │
+│  - WalletDelegate (EIP-7702 delegation + ERC-7710)              │
+│  - X402Facilitator (direct + delegated payment settlement)      │
+│  - Caveat enforcers (spend limits, time, targets, methods)      │
 └──────────┬──────────────────────────────┬───────────────────────┘
            │                              │
 ┌──────────┴──────────┐      ┌────────────┴────────────┐
@@ -64,16 +66,9 @@
 │  - Produce evidence │      │  - Submit evidence       │
 └──────────┬──────────┘      └────────────┬────────────┘
            │                              │
-           └──────────┬───────────────────┘
-                      │ typed actions only
-                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  Agent Passkey (Identity Plane) - agent-passkey/                │
-│  - Lit Protocol PKP (2/3 threshold signatures)                  │
-│  - Policy engine (allowlists, limits, role auth)                │
-│  - Session capabilities (scoped, time-limited)                  │
-│  - Deterministic audit artifacts                                │
-└─────────────────────────────────────────────────────────────────┘
+           ├── Cloud KMS (primary) ───────┤
+           │                              │
+           └── agent-passkey (legacy) ────┘
 ```
 
 ## Delegation Standards (EIP-7702 Ecosystem)
@@ -140,15 +135,16 @@
 ## Cross-Repo Dependencies
 
 ```text
-protocol → (ABI/types) → solver, watchtower
-agent-passkey → (signing client) → solver, watchtower
+protocol → (ABI/types + delegation contracts) → solver, watchtower
+Cloud KMS → (signing) → solver, watchtower
+agent-passkey → (legacy signing client) → solver, watchtower
 ```
 
 **Update order when making changes:**
-1. Update `protocol/` first if contract interfaces change
+1. Update `protocol/` first (including delegation contracts and enforcers)
 2. Regenerate types for TypeScript projects
-3. Update `agent-passkey/` if signing interface changes
-4. Update `solver/` and `watchtower/` last
+3. Update `solver/` and `watchtower/` (both use Cloud KMS directly now)
+4. Update `agent-passkey/` only if legacy compatibility needed
 
 ## Common Patterns
 
@@ -166,7 +162,7 @@ agent-passkey → (signing client) → solver, watchtower
 
 | Repo | Test Command | Coverage |
 |------|--------------|----------|
-| `protocol/` | `forge test` | 308 tests |
+| `protocol/` | `forge test` | 426 tests |
 | `solver/` | `pnpm test` | vitest |
 | `watchtower/` | `pnpm test` | vitest |
 | `agent-passkey/` | `pnpm test` | vitest |
@@ -194,7 +190,10 @@ agent-passkey → (signing client) → solver, watchtower
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AGENT_PASSKEY_URL` | Agent passkey service URL | Required |
+| `SIGNING_MODE` | Signing backend (`kms` or `agent-passkey`) | `kms` |
+| `KMS_KEY_NAME` | Cloud KMS key resource name (when `SIGNING_MODE=kms`) | Required (KMS) |
+| `GCP_PROJECT_ID` | GCP project for KMS | Required (KMS) |
+| `AGENT_PASSKEY_URL` | Agent passkey service URL (legacy, when `SIGNING_MODE=agent-passkey`) | Optional |
 | `SOLVER_AUTH_TOKEN` / `WATCHTOWER_AUTH_TOKEN` | Service auth token | Required |
 | `RPC_URL` | Ethereum RPC endpoint | Required |
 | `CHAIN_ID` | Target chain ID | `11155111` |
@@ -399,7 +398,7 @@ Score = (40% × SuccessRate) + (25% × DisputeWinRate) + (20% × StakeFactor) + 
 
 ## Typed Actions (No Arbitrary Signing)
 
-The agent-passkey signer rejects any request that isn't one of:
+The IRSB signing layer (Cloud KMS or legacy agent-passkey) only processes these action types:
 
 ```typescript
 type IrsbAction =
@@ -453,11 +452,11 @@ These are included in solver/watchtower evidence bundles and referenced in dispu
 ## Quick Health Check
 
 ```bash
-# Check agent-passkey is alive
-curl -s https://irsb-agent-passkey-308207955734.us-central1.run.app/health | jq
-
 # Check Sepolia contracts (requires RPC)
 cast call 0xB6ab964832808E49635fF82D1996D6a888ecB745 "minimumBond()" --rpc-url $SEPOLIA_RPC
+
+# Check agent-passkey is alive (legacy service)
+curl -s https://irsb-agent-passkey-308207955734.us-central1.run.app/health | jq
 ```
 
 ## Documentation Filing
