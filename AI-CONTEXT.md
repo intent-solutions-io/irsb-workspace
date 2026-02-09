@@ -76,6 +76,50 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+## Delegation Standards (EIP-7702 Ecosystem)
+
+| Standard | Role | Status |
+|----------|------|--------|
+| **EIP-7702** | EOA delegates execution to WalletDelegate contract | Adopted (Pectra, May 2025) |
+| **ERC-7710** | `redeemDelegations()` interface for smart contract delegation | Implemented |
+| **ERC-7715** | `wallet_requestExecutionPermissions` for dapp UX | SDK support |
+| **x402** | HTTP payment protocol | Already integrated |
+
+### Delegation Contracts (Sepolia)
+
+| Contract | Purpose |
+|----------|---------|
+| **WalletDelegate** | EIP-7702 delegation with caveat enforcement |
+| **X402Facilitator** | Payment settlement (direct + delegated + batch) |
+| **SpendLimitEnforcer** | Daily + per-tx spend limits |
+| **TimeWindowEnforcer** | Session time bounds |
+| **AllowedTargetsEnforcer** | Approved contract allowlist |
+| **AllowedMethodsEnforcer** | Approved function selector allowlist |
+| **NonceEnforcer** | Replay prevention |
+
+### Delegation vs Lit Protocol
+
+| Aspect | Lit Protocol (deprecated) | EIP-7702 Delegation (current) |
+|--------|--------------------------|-------------------------------|
+| **Signing** | 2/3 TEE threshold via agent-passkey | Cloud KMS direct signing |
+| **Policy** | Off-chain checks (8 rules) | On-chain caveat enforcers |
+| **Latency** | 1-2s per signature | <100ms (KMS) |
+| **Buyer flow** | Not supported | 7702 authorize → set limits → auto-pay |
+| **Verification** | Trust agent-passkey service | On-chain, transparent |
+| **SDK** | v8 alpha, type hacks needed | Standard viem/ethers |
+
+### Buyer Delegation Flow
+
+```text
+1. Developer calls wallet_requestExecutionPermissions (ERC-7715)
+2. Wallet shows: "Allow IRSB to spend up to $100/day USDC?"
+3. Developer signs EIP-7702 authorization → designates WalletDelegate as code
+4. Developer signs EIP-712 delegation → sets caveats (spend limit, time, targets)
+5. WalletDelegate.setupDelegation() stores delegation on-chain
+6. API calls trigger x402 payment → X402Facilitator.settleDelegated() → auto-pays
+7. Each settlement validates ALL caveat enforcers before execution
+```
+
 ## Key Concepts Glossary
 
 | Term | Definition |
@@ -84,11 +128,14 @@
 | **Solver Bond** | Staked ETH collateral (min 0.1 ETH) slashable for violations. Creates economic accountability. |
 | **Challenge Window** | 1-hour period after receipt posting where disputes can be opened. |
 | **Typed Actions** | `SUBMIT_RECEIPT`, `OPEN_DISPUTE`, `SUBMIT_EVIDENCE` - the only signing operations allowed. |
-| **Lit Protocol PKP** | Programmable Key Pairs - threshold signatures across 2/3 TEE nodes. Non-extractable keys. |
+| **Lit Protocol PKP** | DEPRECATED. Programmable Key Pairs via TEE nodes. Replaced by Cloud KMS + EIP-7702 delegation. |
+| **EIP-7702 Delegation** | EOA delegates execution to WalletDelegate contract with on-chain caveat enforcers. |
+| **Caveat Enforcer** | On-chain contract validating a specific constraint (spend limit, time window, etc.) on delegated execution. |
 | **ERC-8004** | Ethereum standard for trustless agent identity with identity, reputation, and validation registries. |
 | **Evidence Bundle** | Structured proof artifact with manifest, hashes, timestamps. Used in disputes. |
 | **Finding** | Watchtower detection result with severity, category, and recommended action. |
-| **Session Capability** | Scoped, time-limited token authorizing specific actions (max 24h TTL). |
+| **WalletDelegate** | Contract implementing ERC-7710 that manages delegations and enforces caveats. |
+| **X402Facilitator** | Contract for settling x402 HTTP payments, supporting direct and delegated flows. |
 
 ## Cross-Repo Dependencies
 
@@ -109,7 +156,7 @@ agent-passkey → (signing client) → solver, watchtower
 |---------|----------------|
 | **Config validation** | Zod schemas with fail-fast on startup |
 | **Logging** | pino with structured JSON, correlation IDs (`intentId`, `runId`, `receiptId`) |
-| **Signing** | Always via agent-passkey, never local keys in production |
+| **Signing** | Cloud KMS (recommended) or agent-passkey (legacy). Buyer payments via EIP-7702 delegation. |
 | **Determinism** | Canonical JSON serialization for hashing (sorted keys, no whitespace) |
 | **CI/CD** | GitHub Actions + Workload Identity Federation (keyless GCP auth) |
 | **Error handling** | Custom error classes, structured error codes |
@@ -380,7 +427,9 @@ interface AuditArtifact {
 
 These are included in solver/watchtower evidence bundles and referenced in dispute submissions.
 
-## Lit Protocol Notes
+## Lit Protocol Notes (DEPRECATED - See EIP-7702 Delegation)
+
+> **Lit Protocol is being replaced by Cloud KMS + EIP-7702 delegation.** See `protocol/000-docs/030-DR-ARCH-eip7702-delegation-architecture.md` for the migration ADR.
 
 **Current Network:** `naga-dev` (development)
 **SDK:** `@lit-protocol/*@8.0.0-alpha.0` (npm `naga` dist-tag). Pin exact version — `^8.0.0` won't match prerelease.
