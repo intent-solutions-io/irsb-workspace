@@ -1,7 +1,7 @@
 # IRSB AI Context Reference
 
 > **Single source of truth for AI assistants working on the IRSB ecosystem.**
-> Last updated: 2026-02-07
+> Last updated: 2026-02-08
 
 ## Quick Facts
 
@@ -383,12 +383,23 @@ These are included in solver/watchtower evidence bundles and referenced in dispu
 ## Lit Protocol Notes
 
 **Current Network:** `naga-dev` (development)
-**Note:** Migrated from Datil (V0) to Naga (V1). Datil networks shut down Feb 25, 2026.
+**SDK:** `@lit-protocol/*@8.0.0-alpha.0` (npm `naga` dist-tag). Pin exact version — `^8.0.0` won't match prerelease.
+**Migration:** Completed 2026-02-08. Datil (V0) SDK v7 → Naga (V1) SDK v8. Datil networks shut down Feb 25, 2026.
+
+**Naga PKP (minted 2026-02-08):**
+
+| Attribute | Value |
+|-----------|-------|
+| Token ID | `0xa8b507b20e325ef3b80fb0287943764fb9e44e2803668b4ea08d62260a471542` |
+| ETH Address | `0x7bcD6e1b4822491B6b4f79884e77c3AD780DfCcb` |
+| Owner | `0x494B46CC87C6e3bC1586DeFA4B31838cBE9f035A` (auth wallet) |
+| GCP Secret | `lit-pkp-public-key` (version 2) |
 
 **How it works:**
 - PKP keys live in 2/3 TEE nodes (no single point of compromise)
 - Session signatures for scoped, time-limited access
 - Threshold signatures: 2/3 nodes must agree to produce valid signature
+- SDK v8 types `litNetwork` as `'naga-dev' | 'custom'` only — cast needed for broader values
 
 ## Quick Health Check
 
