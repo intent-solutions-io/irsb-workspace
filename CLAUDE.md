@@ -130,9 +130,7 @@ Tests in separate `test/` directory with subdirs: `unit/`, `integration/`, `secu
 │  - KMS signing      │    │  - Delegation monitoring │
 └──────────┬──────────┘    └────────────┬────────────┘
            │                            │
-           ├── Cloud KMS (primary) ─────┤
-           │                            │
-           └── agent-passkey (legacy) ──┘
+           └── Cloud KMS (signing) ──────┘
 ```
 
 ## Cross-Project Dependencies and Update Order
@@ -140,20 +138,18 @@ Tests in separate `test/` directory with subdirs: `unit/`, `integration/`, `secu
 ```text
 protocol → (ABI/types + delegation contracts) → solver, watchtower
 Cloud KMS → (signing) → solver, watchtower
-agent-passkey → (legacy signing client) → solver, watchtower
 ```
 
 When contract interfaces change:
 1. Update `protocol/` first (including delegation contracts and enforcers)
 2. Regenerate types for TypeScript projects
 3. Update `solver/` and `watchtower/` (both use Cloud KMS directly now)
-4. Update `agent-passkey/` only if legacy compatibility needed
 
 ## Signing Architecture
 
-**Primary: Cloud KMS + EIP-7702 Delegation.** Solver and watchtower sign directly via Google Cloud KMS. On-chain policy enforcement uses EIP-7702 WalletDelegate with caveat enforcers (spend limits, time windows, allowed targets/methods, replay prevention). See `protocol/000-docs/030-DR-ARCH-eip7702-delegation-architecture.md` for the full ADR.
+**Cloud KMS + EIP-7702 Delegation.** Solver and watchtower sign directly via Google Cloud KMS. On-chain policy enforcement uses EIP-7702 WalletDelegate with caveat enforcers (spend limits, time windows, allowed targets/methods, replay prevention). See `protocol/000-docs/030-DR-ARCH-eip7702-delegation-architecture.md` for the full ADR.
 
-**Legacy: Agent Passkey.** The agent-passkey service (Lit Protocol PKP, 2/3 threshold signatures) is still live on Cloud Run but deprecated. New integrations should use Cloud KMS.
+**Note:** The `agent-passkey/` service (Lit Protocol PKP) is still deployed on Cloud Run but fully deprecated. Both solver and watchtower have been migrated to Cloud KMS — no code references to agent-passkey remain in their signing paths.
 
 ## Common Patterns Across TypeScript Projects
 
