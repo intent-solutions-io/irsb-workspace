@@ -1,7 +1,7 @@
 # IRSB AI Context Reference
 
 > **Single source of truth for AI assistants working on the IRSB ecosystem.**
-> Last updated: 2026-02-08
+> Last updated: 2026-02-09
 
 ## Quick Facts
 
@@ -12,14 +12,54 @@
 | **Network** | Sepolia testnet (chain ID: 11155111) |
 | **Repos** | 4 (protocol, solver, watchtower, agent-passkey) |
 | **License** | MIT |
+| **Primary positioning** | On-chain guardrails for AI agents |
+
+## AI Agents as Primary Use Case
+
+IRSB's core infrastructure — EIP-7702 delegation, caveat enforcers, cryptographic receipts, watchtower monitoring, and on-chain disputes — maps directly to the problem of giving AI agents wallet access without adequate guardrails.
+
+### The Market Gap
+
+Every major AI agent framework gives agents wallet access. None provide on-chain policy enforcement, verifiable execution receipts, or automated recourse.
+
+| Capability | AgentKit | ElizaOS | Olas | Virtuals | Brian AI | Safe | **IRSB** |
+|------------|----------|---------|------|----------|----------|------|----------|
+| Wallet access | Coinbase API | Lit/KMS | Safe multisig | TBA/bonding | Aggregator | Modules | **EIP-7702** |
+| Spend limits | None | None | Consensus | None | Aggregator | Module-based | **On-chain enforcers** |
+| Execution receipts | None | None | None | None | None | None | **Cryptographic proof** |
+| Automated monitoring | None | None | None | None | None | None | **Watchtower** |
+| Dispute resolution | None | None | None | None | None | None | **On-chain arbitration** |
+
+### How IRSB Maps to Agent Guardrails
+
+| IRSB Component | Agent Guardrail Function |
+|----------------|------------------------|
+| WalletDelegate (EIP-7702) | Agent wallet policy — delegates execution with on-chain constraints |
+| SpendLimitEnforcer | Spending caps — daily and per-transaction limits |
+| TimeWindowEnforcer | Session bounds — agents sign only during defined windows |
+| AllowedTargetsEnforcer | Contract whitelist — agents interact only with approved contracts |
+| AllowedMethodsEnforcer | Function whitelist — agents call only approved methods |
+| NonceEnforcer | Replay prevention — each action gets a unique nonce |
+| IntentReceiptHub | Execution receipts — cryptographic proof of every action |
+| Watchtower | Automated monitoring — detects violations and files disputes |
+| DisputeModule | Recourse — on-chain arbitration when agents act outside mandate |
+| ERC-8004 + IntentScore | Portable reputation — agent track records across protocols |
+
+### Target Frameworks (Integration Priority)
+
+1. **ElizaOS** — Plugin architecture, largest AI agent community, currently uses Lit/KMS with ProofGate
+2. **Safe** — Module system, existing smart account infrastructure, natural fit for WalletDelegate
+3. **Coinbase AgentKit** — TypeScript SDK, Coinbase wallet API, broad developer reach
+4. **Olas** — Autonomous agent services, Safe multisig, consensus-based execution
+5. **Brian AI** — Natural language to transactions, aggregator model
+6. **Virtuals** — Token-bonded agents, TBA architecture
 
 ## Live Deployments
 
 | Service | URL | Status |
 |---------|-----|--------|
-| **Agent Passkey** | https://irsb-agent-passkey-308207955734.us-central1.run.app | Production |
-| **Health Check** | `/health` returns `{"status":"ok"}` | |
 | **Protocol Contracts** | See addresses below | Sepolia |
+| **Agent Passkey** (legacy) | https://irsb-agent-passkey-308207955734.us-central1.run.app | Deprecated (still running) |
 
 ## Contract Addresses (Sepolia)
 
@@ -42,19 +82,21 @@
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│  ERC-8004 (Registry Layer) - Agent identity & reputation        │
-│  - Agent identity registry (24,549+ agents on mainnet)          │
-│  - Reputation scores                                            │
-│  - Validation provider discovery                                │
+│  AI Agents / DeFi Solvers                                        │
+│  - Any framework: AgentKit, ElizaOS, Olas, custom                │
+│  - Delegate wallet to WalletDelegate for policy enforcement      │
 └─────────────────────┬───────────────────────────────────────────┘
-                      │ read identity / publish signals
+                      │ delegate wallet
                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  IRSB Protocol (Accountability Layer) - protocol/               │
-│  - Intent receipts (V1 single-sig, V2 dual attestation)         │
-│  - Solver bonds (0.1 ETH minimum)                               │
-│  - Dispute resolution (1hr challenge window)                    │
-│  - Escrow (ETH + ERC20)                                         │
+│  IRSB Protocol (On-Chain Guardrails) - protocol/                 │
+│  - WalletDelegate (EIP-7702 delegation + ERC-7710)               │
+│  - Caveat enforcers (spend limits, time, targets, methods, nonce)│
+│  - Intent receipts (V1 single-sig, V2 dual attestation)          │
+│  - Solver bonds (0.1 ETH minimum)                                │
+│  - Dispute resolution (1hr challenge window)                     │
+│  - Escrow (ETH + ERC20)                                          │
+│  - X402Facilitator (direct + delegated payment settlement)       │
 └──────────┬──────────────────────────────┬───────────────────────┘
            │                              │
 ┌──────────┴──────────┐      ┌────────────┴────────────┐
@@ -64,16 +106,59 @@
 │  - Produce evidence │      │  - Submit evidence       │
 └──────────┬──────────┘      └────────────┬────────────┘
            │                              │
-           └──────────┬───────────────────┘
-                      │ typed actions only
+           └── Cloud KMS (signing) ───────┘
+                      │
                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Agent Passkey (Identity Plane) - agent-passkey/                │
-│  - Lit Protocol PKP (2/3 threshold signatures)                  │
-│  - Policy engine (allowlists, limits, role auth)                │
-│  - Session capabilities (scoped, time-limited)                  │
-│  - Deterministic audit artifacts                                │
+│  ERC-8004 (Registry Layer) - Agent identity & reputation         │
+│  - Agent identity registry (24,549+ agents on mainnet)           │
+│  - Reputation scores from execution history                      │
+│  - Validation provider discovery                                 │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+## Delegation Standards (EIP-7702 Ecosystem)
+
+| Standard | Role | Status |
+|----------|------|--------|
+| **EIP-7702** | EOA delegates execution to WalletDelegate contract | Adopted (Pectra, May 2025) |
+| **ERC-7710** | `redeemDelegations()` interface for smart contract delegation | Implemented |
+| **ERC-7715** | `wallet_requestExecutionPermissions` for dapp UX | SDK support |
+| **x402** | HTTP payment protocol | Already integrated |
+
+### Delegation Contracts (Sepolia)
+
+| Contract | Purpose |
+|----------|---------|
+| **WalletDelegate** | EIP-7702 delegation with caveat enforcement |
+| **X402Facilitator** | Payment settlement (direct + delegated + batch) |
+| **SpendLimitEnforcer** | Daily + per-tx spend limits |
+| **TimeWindowEnforcer** | Session time bounds |
+| **AllowedTargetsEnforcer** | Approved contract allowlist |
+| **AllowedMethodsEnforcer** | Approved function selector allowlist |
+| **NonceEnforcer** | Replay prevention |
+
+### Delegation vs Lit Protocol
+
+| Aspect | Lit Protocol (deprecated) | EIP-7702 Delegation (current) |
+|--------|--------------------------|-------------------------------|
+| **Signing** | 2/3 TEE threshold via agent-passkey | Cloud KMS direct signing |
+| **Policy** | Off-chain checks (8 rules) | On-chain caveat enforcers |
+| **Latency** | 1-2s per signature | <100ms (KMS) |
+| **Buyer flow** | Not supported | 7702 authorize → set limits → auto-pay |
+| **Verification** | Trust agent-passkey service | On-chain, transparent |
+| **SDK** | v8 alpha, type hacks needed | Standard viem/ethers |
+
+### Buyer Delegation Flow
+
+```text
+1. Developer calls wallet_requestExecutionPermissions (ERC-7715)
+2. Wallet shows: "Allow IRSB to spend up to $100/day USDC?"
+3. Developer signs EIP-7702 authorization → designates WalletDelegate as code
+4. Developer signs EIP-712 delegation → sets caveats (spend limit, time, targets)
+5. WalletDelegate.setupDelegation() stores delegation on-chain
+6. API calls trigger x402 payment → X402Facilitator.settleDelegated() → auto-pays
+7. Each settlement validates ALL caveat enforcers before execution
 ```
 
 ## Key Concepts Glossary
@@ -84,24 +169,28 @@
 | **Solver Bond** | Staked ETH collateral (min 0.1 ETH) slashable for violations. Creates economic accountability. |
 | **Challenge Window** | 1-hour period after receipt posting where disputes can be opened. |
 | **Typed Actions** | `SUBMIT_RECEIPT`, `OPEN_DISPUTE`, `SUBMIT_EVIDENCE` - the only signing operations allowed. |
-| **Lit Protocol PKP** | Programmable Key Pairs - threshold signatures across 2/3 TEE nodes. Non-extractable keys. |
+| **Lit Protocol PKP** | DEPRECATED. Programmable Key Pairs via TEE nodes. Replaced by Cloud KMS + EIP-7702 delegation. |
+| **EIP-7702 Delegation** | EOA delegates execution to WalletDelegate contract with on-chain caveat enforcers. |
+| **Caveat Enforcer** | On-chain contract validating a specific constraint (spend limit, time window, etc.) on delegated execution. |
 | **ERC-8004** | Ethereum standard for trustless agent identity with identity, reputation, and validation registries. |
 | **Evidence Bundle** | Structured proof artifact with manifest, hashes, timestamps. Used in disputes. |
 | **Finding** | Watchtower detection result with severity, category, and recommended action. |
-| **Session Capability** | Scoped, time-limited token authorizing specific actions (max 24h TTL). |
+| **WalletDelegate** | Contract implementing ERC-7710 that manages delegations and enforces caveats. |
+| **X402Facilitator** | Contract for settling x402 HTTP payments, supporting direct and delegated flows. |
 
 ## Cross-Repo Dependencies
 
 ```text
-protocol → (ABI/types) → solver, watchtower
-agent-passkey → (signing client) → solver, watchtower
+protocol → (ABI/types + delegation contracts) → solver, watchtower
+Cloud KMS → (signing) → solver, watchtower
+agent-passkey → (legacy signing client) → solver, watchtower
 ```
 
 **Update order when making changes:**
-1. Update `protocol/` first if contract interfaces change
+1. Update `protocol/` first (including delegation contracts and enforcers)
 2. Regenerate types for TypeScript projects
-3. Update `agent-passkey/` if signing interface changes
-4. Update `solver/` and `watchtower/` last
+3. Update `solver/` and `watchtower/` (both use Cloud KMS directly now)
+4. Update `agent-passkey/` only if legacy compatibility needed
 
 ## Common Patterns
 
@@ -109,7 +198,7 @@ agent-passkey → (signing client) → solver, watchtower
 |---------|----------------|
 | **Config validation** | Zod schemas with fail-fast on startup |
 | **Logging** | pino with structured JSON, correlation IDs (`intentId`, `runId`, `receiptId`) |
-| **Signing** | Always via agent-passkey, never local keys in production |
+| **Signing** | Cloud KMS (recommended) or agent-passkey (legacy). Buyer payments via EIP-7702 delegation. |
 | **Determinism** | Canonical JSON serialization for hashing (sorted keys, no whitespace) |
 | **CI/CD** | GitHub Actions + Workload Identity Federation (keyless GCP auth) |
 | **Error handling** | Custom error classes, structured error codes |
@@ -119,7 +208,7 @@ agent-passkey → (signing client) → solver, watchtower
 
 | Repo | Test Command | Coverage |
 |------|--------------|----------|
-| `protocol/` | `forge test` | 308 tests |
+| `protocol/` | `forge test` | 426 tests |
 | `solver/` | `pnpm test` | vitest |
 | `watchtower/` | `pnpm test` | vitest |
 | `agent-passkey/` | `pnpm test` | vitest |
@@ -147,7 +236,10 @@ agent-passkey → (signing client) → solver, watchtower
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AGENT_PASSKEY_URL` | Agent passkey service URL | Required |
+| `SIGNING_MODE` | Signing backend (`kms` or `agent-passkey`) | `kms` |
+| `KMS_KEY_NAME` | Cloud KMS key resource name (when `SIGNING_MODE=kms`) | Required (KMS) |
+| `GCP_PROJECT_ID` | GCP project for KMS | Required (KMS) |
+| `AGENT_PASSKEY_URL` | Agent passkey service URL (legacy, when `SIGNING_MODE=agent-passkey`) | Optional |
 | `SOLVER_AUTH_TOKEN` / `WATCHTOWER_AUTH_TOKEN` | Service auth token | Required |
 | `RPC_URL` | Ethereum RPC endpoint | Required |
 | `CHAIN_ID` | Target chain ID | `11155111` |
@@ -352,7 +444,7 @@ Score = (40% × SuccessRate) + (25% × DisputeWinRate) + (20% × StakeFactor) + 
 
 ## Typed Actions (No Arbitrary Signing)
 
-The agent-passkey signer rejects any request that isn't one of:
+The IRSB signing layer (Cloud KMS or legacy agent-passkey) only processes these action types:
 
 ```typescript
 type IrsbAction =
@@ -380,7 +472,9 @@ interface AuditArtifact {
 
 These are included in solver/watchtower evidence bundles and referenced in dispute submissions.
 
-## Lit Protocol Notes
+## Lit Protocol Notes (DEPRECATED - See EIP-7702 Delegation)
+
+> **Lit Protocol is being replaced by Cloud KMS + EIP-7702 delegation.** See `protocol/000-docs/030-DR-ARCH-eip7702-delegation-architecture.md` for the migration ADR.
 
 **Current Network:** `naga-dev` (development)
 **SDK:** `@lit-protocol/*@8.0.0-alpha.0` (npm `naga` dist-tag). Pin exact version — `^8.0.0` won't match prerelease.
@@ -404,11 +498,11 @@ These are included in solver/watchtower evidence bundles and referenced in dispu
 ## Quick Health Check
 
 ```bash
-# Check agent-passkey is alive
-curl -s https://irsb-agent-passkey-308207955734.us-central1.run.app/health | jq
-
 # Check Sepolia contracts (requires RPC)
 cast call 0xB6ab964832808E49635fF82D1996D6a888ecB745 "minimumBond()" --rpc-url $SEPOLIA_RPC
+
+# Check agent-passkey is alive (legacy service)
+curl -s https://irsb-agent-passkey-308207955734.us-central1.run.app/health | jq
 ```
 
 ## Documentation Filing

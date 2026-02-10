@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `protocol/` | Solidity 0.8.25, Foundry | On-chain contracts (receipts, bonds, disputes, escrow) | Deployed (Sepolia) |
 | `solver/` | TypeScript, Express | Execute intents, produce evidence, submit receipts | Development |
 | `watchtower/` | TypeScript, Fastify (pnpm monorepo) | Monitor receipts, detect violations, file disputes | v0.3.0 |
-| `agent-passkey/` | TypeScript, Fastify | Policy-gated signing via Lit Protocol PKP | Live (Cloud Run) |
+| `agent-passkey/` | TypeScript, Fastify | Policy-gated signing via Lit Protocol PKP | Deprecated (Cloud Run, legacy) |
 
 ## Build, Test, Lint Commands
 
@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 cd protocol/
 forge build                           # Compile (via_ir, optimizer 200 runs)
-forge test                            # All 308 tests
+forge test                            # All 426 tests
 forge test -vvv                       # Verbose output
 forge test --match-test testSlashing  # Single test by name
 forge test --match-path "test/EscrowVault.t.sol"  # Single test file
@@ -119,39 +119,37 @@ Tests in separate `test/` directory with subdirs: `unit/`, `integration/`, `secu
 │  IRSB Protocol (protocol/) - On-chain accountability           │
 │  - Intent receipts (V1 single-sig, V2 dual attestation)        │
 │  - Solver bonds, disputes, escrow                              │
+│  - WalletDelegate (EIP-7702) + caveat enforcers                │
+│  - X402Facilitator (direct + delegated payment settlement)     │
 └──────────┬────────────────────────────┬─────────────────────────┘
            │                            │
 ┌──────────┴──────────┐    ┌────────────┴────────────┐
 │  Solver (solver/)   │    │  Watchtower (watchtower/)│
 │  - Execute intents  │    │  - Monitor receipts      │
 │  - Submit receipts  │    │  - File disputes         │
+│  - KMS signing      │    │  - Delegation monitoring │
 └──────────┬──────────┘    └────────────┬────────────┘
            │                            │
-           └──────────┬─────────────────┘
-                      │ typed actions only
-┌─────────────────────┴───────────────────────────────────────────┐
-│  Agent Passkey (agent-passkey/) - Identity plane               │
-│  - Lit Protocol PKP (2/3 threshold signatures)                 │
-│  - Policy engine, session capabilities, audit artifacts        │
-└─────────────────────────────────────────────────────────────────┘
+           └── Cloud KMS (signing) ──────┘
 ```
 
 ## Cross-Project Dependencies and Update Order
 
 ```text
-protocol → (ABI/types) → solver, watchtower
-agent-passkey → (signing client) → solver, watchtower
+protocol → (ABI/types + delegation contracts) → solver, watchtower
+Cloud KMS → (signing) → solver, watchtower
 ```
 
 When contract interfaces change:
-1. Update `protocol/` first
+1. Update `protocol/` first (including delegation contracts and enforcers)
 2. Regenerate types for TypeScript projects
-3. Update `agent-passkey/` if signing interface changes
-4. Update `solver/` and `watchtower/` last
+3. Update `solver/` and `watchtower/` (both use Cloud KMS directly now)
 
-## Signing: Always Via Agent Passkey
+## Signing Architecture
 
-**No local signing in production.** Solver and watchtower submit typed actions (`SUBMIT_RECEIPT`, `OPEN_DISPUTE`, `SUBMIT_EVIDENCE`) to agent-passkey, which validates policy, builds transactions, signs with Lit PKP, and produces audit artifacts. See `agent-passkey/CLAUDE.md` for API details.
+**Cloud KMS + EIP-7702 Delegation.** Solver and watchtower sign directly via Google Cloud KMS. On-chain policy enforcement uses EIP-7702 WalletDelegate with caveat enforcers (spend limits, time windows, allowed targets/methods, replay prevention). See `protocol/000-docs/030-DR-ARCH-eip7702-delegation-architecture.md` for the full ADR.
+
+**Note:** The `agent-passkey/` service (Lit Protocol PKP) is still deployed on Cloud Run but fully deprecated. Both solver and watchtower have been migrated to Cloud KMS — no code references to agent-passkey remain in their signing paths.
 
 ## Common Patterns Across TypeScript Projects
 
