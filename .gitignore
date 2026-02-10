@@ -4,6 +4,9 @@ solver/
 watchtower/
 agent-passkey/
 
+# Data
+*.db
+
 # OS
 .DS_Store
 Thumbs.db
