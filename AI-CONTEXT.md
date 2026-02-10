@@ -1,7 +1,7 @@
 # IRSB AI Context Reference
 
 > **Single source of truth for AI assistants working on the IRSB ecosystem.**
-> Last updated: 2026-02-08
+> Last updated: 2026-02-09
 
 ## Quick Facts
 
@@ -12,6 +12,47 @@
 | **Network** | Sepolia testnet (chain ID: 11155111) |
 | **Repos** | 4 (protocol, solver, watchtower, agent-passkey) |
 | **License** | MIT |
+| **Primary positioning** | On-chain guardrails for AI agents |
+
+## AI Agents as Primary Use Case
+
+IRSB's core infrastructure — EIP-7702 delegation, caveat enforcers, cryptographic receipts, watchtower monitoring, and on-chain disputes — maps directly to the problem of giving AI agents wallet access without adequate guardrails.
+
+### The Market Gap
+
+Every major AI agent framework gives agents wallet access. None provide on-chain policy enforcement, verifiable execution receipts, or automated recourse.
+
+| Capability | AgentKit | ElizaOS | Olas | Virtuals | Brian AI | Safe | **IRSB** |
+|------------|----------|---------|------|----------|----------|------|----------|
+| Wallet access | Coinbase API | Lit/KMS | Safe multisig | TBA/bonding | Aggregator | Modules | **EIP-7702** |
+| Spend limits | None | None | Consensus | None | Aggregator | Module-based | **On-chain enforcers** |
+| Execution receipts | None | None | None | None | None | None | **Cryptographic proof** |
+| Automated monitoring | None | None | None | None | None | None | **Watchtower** |
+| Dispute resolution | None | None | None | None | None | None | **On-chain arbitration** |
+
+### How IRSB Maps to Agent Guardrails
+
+| IRSB Component | Agent Guardrail Function |
+|----------------|------------------------|
+| WalletDelegate (EIP-7702) | Agent wallet policy — delegates execution with on-chain constraints |
+| SpendLimitEnforcer | Spending caps — daily and per-transaction limits |
+| TimeWindowEnforcer | Session bounds — agents sign only during defined windows |
+| AllowedTargetsEnforcer | Contract whitelist — agents interact only with approved contracts |
+| AllowedMethodsEnforcer | Function whitelist — agents call only approved methods |
+| NonceEnforcer | Replay prevention — each action gets a unique nonce |
+| IntentReceiptHub | Execution receipts — cryptographic proof of every action |
+| Watchtower | Automated monitoring — detects violations and files disputes |
+| DisputeModule | Recourse — on-chain arbitration when agents act outside mandate |
+| ERC-8004 + IntentScore | Portable reputation — agent track records across protocols |
+
+### Target Frameworks (Integration Priority)
+
+1. **ElizaOS** — Plugin architecture, largest AI agent community, currently uses Lit/KMS with ProofGate
+2. **Safe** — Module system, existing smart account infrastructure, natural fit for WalletDelegate
+3. **Coinbase AgentKit** — TypeScript SDK, Coinbase wallet API, broad developer reach
+4. **Olas** — Autonomous agent services, Safe multisig, consensus-based execution
+5. **Brian AI** — Natural language to transactions, aggregator model
+6. **Virtuals** — Token-bonded agents, TBA architecture
 
 ## Live Deployments
 
@@ -41,22 +82,21 @@
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│  ERC-8004 (Registry Layer) - Agent identity & reputation        │
-│  - Agent identity registry (24,549+ agents on mainnet)          │
-│  - Reputation scores                                            │
-│  - Validation provider discovery                                │
+│  AI Agents / DeFi Solvers                                        │
+│  - Any framework: AgentKit, ElizaOS, Olas, custom                │
+│  - Delegate wallet to WalletDelegate for policy enforcement      │
 └─────────────────────┬───────────────────────────────────────────┘
-                      │ read identity / publish signals
+                      │ delegate wallet
                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  IRSB Protocol (Accountability Layer) - protocol/               │
-│  - Intent receipts (V1 single-sig, V2 dual attestation)         │
-│  - Solver bonds (0.1 ETH minimum)                               │
-│  - Dispute resolution (1hr challenge window)                    │
-│  - Escrow (ETH + ERC20)                                         │
-│  - WalletDelegate (EIP-7702 delegation + ERC-7710)              │
-│  - X402Facilitator (direct + delegated payment settlement)      │
-│  - Caveat enforcers (spend limits, time, targets, methods)      │
+│  IRSB Protocol (On-Chain Guardrails) - protocol/                 │
+│  - WalletDelegate (EIP-7702 delegation + ERC-7710)               │
+│  - Caveat enforcers (spend limits, time, targets, methods, nonce)│
+│  - Intent receipts (V1 single-sig, V2 dual attestation)          │
+│  - Solver bonds (0.1 ETH minimum)                                │
+│  - Dispute resolution (1hr challenge window)                     │
+│  - Escrow (ETH + ERC20)                                          │
+│  - X402Facilitator (direct + delegated payment settlement)       │
 └──────────┬──────────────────────────────┬───────────────────────┘
            │                              │
 ┌──────────┴──────────┐      ┌────────────┴────────────┐
@@ -66,9 +106,15 @@
 │  - Produce evidence │      │  - Submit evidence       │
 └──────────┬──────────┘      └────────────┬────────────┘
            │                              │
-           ├── Cloud KMS (primary) ───────┤
-           │                              │
-           └── agent-passkey (legacy) ────┘
+           └── Cloud KMS (signing) ───────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  ERC-8004 (Registry Layer) - Agent identity & reputation         │
+│  - Agent identity registry (24,549+ agents on mainnet)           │
+│  - Reputation scores from execution history                      │
+│  - Validation provider discovery                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Delegation Standards (EIP-7702 Ecosystem)
