@@ -6,13 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Workspace Overview
 
-**IRSB (Intent Receipts & Solver Bonds)** is Ethereum's accountability layer for intent-based transactions. This is a multi-project workspace containing four repos in a unified structure.
+**IRSB (Intent Receipts & Solver Bonds)** is Ethereum's accountability layer for intent-based transactions. This is a multi-project workspace containing five repos in a unified structure.
 
 | Project | Tech Stack | Purpose | Status |
 |---------|------------|---------|--------|
 | `protocol/` | Solidity 0.8.25, Foundry | On-chain contracts (receipts, bonds, disputes, escrow) | Deployed (Sepolia) |
 | `solver/` | TypeScript, Express | Execute intents, produce evidence, submit receipts | v0.2.0 |
 | `watchtower/` | TypeScript, Fastify (pnpm monorepo) | Monitor receipts, detect violations, file disputes | v0.4.0 |
+| `agents/` | Python 3.11+, FastAPI, LangChain, ChromaDB | AI agents (builder + money) with RAG knowledge base | Phase 1 |
 | `agent-passkey/` | TypeScript, Fastify | Policy-gated signing via Lit Protocol PKP | Deprecated (Cloud Run, legacy) |
 
 ## Build, Test, Lint Commands
