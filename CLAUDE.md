@@ -11,8 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Project | Tech Stack | Purpose | Status |
 |---------|------------|---------|--------|
 | `protocol/` | Solidity 0.8.25, Foundry | On-chain contracts (receipts, bonds, disputes, escrow) | Deployed (Sepolia) |
-| `solver/` | TypeScript, Express | Execute intents, produce evidence, submit receipts | Development |
-| `watchtower/` | TypeScript, Fastify (pnpm monorepo) | Monitor receipts, detect violations, file disputes | v0.3.0 |
+| `solver/` | TypeScript, Express | Execute intents, produce evidence, submit receipts | v0.2.0 |
+| `watchtower/` | TypeScript, Fastify (pnpm monorepo) | Monitor receipts, detect violations, file disputes | v0.4.0 |
 | `agent-passkey/` | TypeScript, Fastify | Policy-gated signing via Lit Protocol PKP | Deprecated (Cloud Run, legacy) |
 
 ## Build, Test, Lint Commands
