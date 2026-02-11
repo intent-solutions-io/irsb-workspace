@@ -68,6 +68,13 @@ Every major AI agent framework gives agents wallet access. None provide on-chain
 | **SolverRegistry** | `0xB6ab964832808E49635fF82D1996D6a888ecB745` | Solver lifecycle, bonding, slashing |
 | **IntentReceiptHub** | `0xD66A1e880AA3939CA066a9EA1dD37ad3d01D977c` | Receipt posting, disputes, finalization |
 | **DisputeModule** | `0x144DfEcB57B08471e2A75E78fc0d2A74A89DB79D` | Arbitration for complex disputes |
+| **WalletDelegate** | `0x6e7262bA8eE3e722aD5f83Ad793f3c071A3769cB` | EIP-7702 delegation with caveat enforcement |
+| **X402Facilitator** | `0x0CDf48B293cdee132918cFb3a976aA6da59f4E6F` | Payment settlement (direct + delegated) |
+| **SpendLimitEnforcer** | `0x8eBAF3db4785C3E8DFABa1A77Ee6373eD5D38F8D` | Daily + per-tx spend limits |
+| **TimeWindowEnforcer** | `0x51DF412e99E9066B1B3Cab81a1756239659207B4` | Session time bounds |
+| **AllowedTargetsEnforcer** | `0x80a18b93014E0a2A3Af025C7Fa2213E24e9E2A2b` | Approved contract allowlist |
+| **AllowedMethodsEnforcer** | `0x633aC1d114e18d1F1fC1De30a6aF37fe1AE91ddf` | Approved function selector allowlist |
+| **NonceEnforcer** | `0x02962c406A7a29adF26F40657b111B90c236DbF1` | Replay prevention |
 
 ### Operational Accounts (Sepolia)
 
@@ -128,15 +135,15 @@ Every major AI agent framework gives agents wallet access. None provide on-chain
 
 ### Delegation Contracts (Sepolia)
 
-| Contract | Purpose |
-|----------|---------|
-| **WalletDelegate** | EIP-7702 delegation with caveat enforcement |
-| **X402Facilitator** | Payment settlement (direct + delegated + batch) |
-| **SpendLimitEnforcer** | Daily + per-tx spend limits |
-| **TimeWindowEnforcer** | Session time bounds |
-| **AllowedTargetsEnforcer** | Approved contract allowlist |
-| **AllowedMethodsEnforcer** | Approved function selector allowlist |
-| **NonceEnforcer** | Replay prevention |
+| Contract | Address | Purpose |
+|----------|---------|---------|
+| **WalletDelegate** | `0x6e7262bA8eE3e722aD5f83Ad793f3c071A3769cB` | EIP-7702 delegation with caveat enforcement |
+| **X402Facilitator** | `0x0CDf48B293cdee132918cFb3a976aA6da59f4E6F` | Payment settlement (direct + delegated + batch) |
+| **SpendLimitEnforcer** | `0x8eBAF3db4785C3E8DFABa1A77Ee6373eD5D38F8D` | Daily + per-tx spend limits |
+| **TimeWindowEnforcer** | `0x51DF412e99E9066B1B3Cab81a1756239659207B4` | Session time bounds |
+| **AllowedTargetsEnforcer** | `0x80a18b93014E0a2A3Af025C7Fa2213E24e9E2A2b` | Approved contract allowlist |
+| **AllowedMethodsEnforcer** | `0x633aC1d114e18d1F1fC1De30a6aF37fe1AE91ddf` | Approved function selector allowlist |
+| **NonceEnforcer** | `0x02962c406A7a29adF26F40657b111B90c236DbF1` | Replay prevention |
 
 ### Delegation vs Lit Protocol
 
@@ -183,14 +190,12 @@ Every major AI agent framework gives agents wallet access. None provide on-chain
 ```text
 protocol → (ABI/types + delegation contracts) → solver, watchtower
 Cloud KMS → (signing) → solver, watchtower
-agent-passkey → (legacy signing client) → solver, watchtower
 ```
 
 **Update order when making changes:**
 1. Update `protocol/` first (including delegation contracts and enforcers)
 2. Regenerate types for TypeScript projects
 3. Update `solver/` and `watchtower/` (both use Cloud KMS directly now)
-4. Update `agent-passkey/` only if legacy compatibility needed
 
 ## Common Patterns
 
@@ -198,7 +203,7 @@ agent-passkey → (legacy signing client) → solver, watchtower
 |---------|----------------|
 | **Config validation** | Zod schemas with fail-fast on startup |
 | **Logging** | pino with structured JSON, correlation IDs (`intentId`, `runId`, `receiptId`) |
-| **Signing** | Cloud KMS (recommended) or agent-passkey (legacy). Buyer payments via EIP-7702 delegation. |
+| **Signing** | Cloud KMS (solver: KMS-only, watchtower: local/gcp-kms). Buyer payments via EIP-7702 delegation. |
 | **Determinism** | Canonical JSON serialization for hashing (sorted keys, no whitespace) |
 | **CI/CD** | GitHub Actions + Workload Identity Federation (keyless GCP auth) |
 | **Error handling** | Custom error classes, structured error codes |
@@ -208,7 +213,7 @@ agent-passkey → (legacy signing client) → solver, watchtower
 
 | Repo | Test Command | Coverage |
 |------|--------------|----------|
-| `protocol/` | `forge test` | 426 tests |
+| `protocol/` | `forge test` | 448 tests |
 | `solver/` | `pnpm test` | vitest |
 | `watchtower/` | `pnpm test` | vitest |
 | `agent-passkey/` | `pnpm test` | vitest |
@@ -222,24 +227,18 @@ agent-passkey → (legacy signing client) → solver, watchtower
 | `LOG_LEVEL` | pino log level | `info` |
 | `PORT` | HTTP server port | `8080` |
 
-### Agent Passkey Specific
+### Agent Passkey (DEPRECATED)
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `LIT_NETWORK` | Lit Protocol network (`naga-dev`, `naga-test`, `naga`) | Yes |
-| `LIT_AUTH_PRIVATE_KEY` | Auth wallet for session signatures | Yes |
-| `LIT_PKP_PUBLIC_KEY` | PKP public key (uncompressed) | Yes |
-| `AUTH_AUDIENCE` | JWT audience | `irsb-agent-passkey` |
-| `ERC8004_ENABLED` | Enable ERC-8004 integration | `false` |
+> Agent-passkey is fully deprecated. Solver and watchtower no longer reference it.
+> The service is still running on Cloud Run but unused by any active signing path.
 
 ### Solver/Watchtower Specific
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `SIGNING_MODE` | Signing backend (`kms` or `agent-passkey`) | `kms` |
-| `KMS_KEY_NAME` | Cloud KMS key resource name (when `SIGNING_MODE=kms`) | Required (KMS) |
+| `SIGNING_MODE` | Signing backend (solver: `kms` only; watchtower: `local` or `gcp-kms`) | `kms` / `local` |
+| `KMS_KEY_NAME` | Cloud KMS key resource name | Required (KMS) |
 | `GCP_PROJECT_ID` | GCP project for KMS | Required (KMS) |
-| `AGENT_PASSKEY_URL` | Agent passkey service URL (legacy, when `SIGNING_MODE=agent-passkey`) | Optional |
 | `SOLVER_AUTH_TOKEN` / `WATCHTOWER_AUTH_TOKEN` | Service auth token | Required |
 | `RPC_URL` | Ethereum RPC endpoint | Required |
 | `CHAIN_ID` | Target chain ID | `11155111` |

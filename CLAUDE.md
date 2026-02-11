@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 cd protocol/
 forge build                           # Compile (via_ir, optimizer 200 runs)
-forge test                            # All 426 tests
+forge test                            # All 448 tests
 forge test -vvv                       # Verbose output
 forge test --match-test testSlashing  # Single test by name
 forge test --match-path "test/EscrowVault.t.sol"  # Single test file
