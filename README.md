@@ -183,6 +183,61 @@ flowchart TB
 | [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) | Trustless agent identity — IRSB publishes reputation signals to the on-chain registry |
 | [x402](https://www.x402.org/) | HTTP payment protocol — IRSB solver can serve as an x402-compatible payment facilitator |
 
+## Security
+
+### On-Chain Security Patterns
+
+All stateful contracts implement defense-in-depth:
+
+| Pattern | Coverage | Purpose |
+|---------|----------|---------|
+| **ReentrancyGuard** | All 10 stateful contracts | Prevents reentrancy on every external state-changing function |
+| **Pausable** | 8 contracts | Emergency circuit breaker for exploit containment |
+| **Ownable** | All contracts | Role-based access control on administrative functions |
+| **EIP-712 Typed Signatures** | Receipts + delegations | Domain-separated, replay-resistant signature verification |
+| **Custom Modifiers** | `receiptExists`, `solverExists`, `escrowExists` | Input validation at function boundaries |
+| **Pull-over-Push** | Bond withdrawals, escrow releases | Prevents DoS via failed external calls |
+
+### Key Invariants
+
+| ID | Invariant | Contract |
+|----|-----------|----------|
+| WD-1 | Revoked delegations cannot execute | WalletDelegate |
+| WD-2 | All caveats enforced before execution (pre-hooks before call, post-hooks after) | WalletDelegate |
+| SLE-1 | Cumulative spend never exceeds configured limit per period | SpendLimitEnforcer |
+| XF-1 | No double settlement — each intent settles exactly once | X402Facilitator |
+| EV-1 | Escrow funds only released to designated recipient by hub | EscrowVault |
+| DM-1 | Disputes follow state machine (Open → Escalated → Resolved) | DisputeModule |
+
+### Testing
+
+- **448 Foundry tests** covering all contracts and edge cases
+- **CI fuzz profile** with 10,000 runs per fuzz test (vs 256 default)
+- **Enforcer-specific test suites** for each caveat enforcer
+- **Dual attestation tests** for ReceiptV2 (EIP-712 co-signatures)
+- **Slashing/jail tests** for dispute resolution flows
+
+### Automated Audit
+
+**SolidityGuard v1.2.0** (2026-02-11) — 104 vulnerability patterns scanned across 36 files / 6,976 lines:
+
+| Severity | Raw | After Triage |
+|----------|-----|-------------|
+| Critical | 7 | **0 actionable** (all false positives — ReentrancyGuard, test mocks) |
+| High | 112 | **~5 acknowledged** (bounded loops, EIP-7702 by design) |
+| Medium | 87 | **~3 acknowledged** (encodePacked review, precision) |
+| Low | 38 | **0 actionable** (floating pragma, standard patterns) |
+
+Full report: [`protocol/000-docs/038-AA-AUDT-solidityguard-audit-report.md`](protocol/000-docs/038-AA-AUDT-solidityguard-audit-report.md)
+
+### Signing
+
+All transaction signing uses **Google Cloud KMS** — no private keys in code, environment variables, or config files. On-chain policy enforcement via EIP-7702 WalletDelegate with five caveat enforcers provides additional runtime constraints.
+
+### Audit Status
+
+Self-audited with automated tooling (SolidityGuard, Foundry fuzz suite). **No formal third-party audit yet** — planned before mainnet deployment. The protocol is currently deployed on Sepolia testnet only.
+
 <details>
 <summary><strong>Protocol Parameters</strong></summary>
 
