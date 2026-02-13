@@ -150,10 +150,10 @@ flowchart TB
 
 | Repo | Description | Status |
 |------|-------------|--------|
-| [protocol](https://github.com/intent-solutions-io/irsb-protocol) | Solidity contracts — receipts, bonds, disputes, escrow (Foundry) | v1.3.1 (Sepolia) |
+| [protocol](https://github.com/intent-solutions-io/irsb-protocol) | Solidity contracts — receipts, bonds, disputes, escrow (Foundry) | v1.4.0 (Sepolia) |
 | [solver](https://github.com/intent-solutions-io/irsb-solver) | Reference solver implementation (TypeScript, Express) | v0.3.0 |
 | [watchtower](https://github.com/intent-solutions-io/irsb-watchtower) | Monitor receipts, detect violations, file disputes (TypeScript, Fastify) | v0.5.0 |
-| [agents](https://github.com/intent-solutions-io/irsb-agents) | Builder + Money agents with RAG knowledge base (Python, LangChain) | v0.1.0 |
+| [agents](https://github.com/intent-solutions-io/irsb-agents) | Builder + Money agents with RAG knowledge base (Python, LangChain) | v0.2.0 |
 | [agent-passkey](https://github.com/intent-solutions-io/irsb-agent-passkey) | Policy-gated signing via Lit Protocol PKP (TypeScript, Fastify) | v1.0.1 (Deprecated) |
 
 ## Live Deployments
