@@ -1,7 +1,7 @@
 # IRSB AI Context Reference
 
 > **Single source of truth for AI assistants working on the IRSB ecosystem.**
-> Last updated: 2026-02-09
+> Last updated: 2026-02-15
 
 ## Quick Facts
 
@@ -10,7 +10,7 @@
 | **Organization** | `intent-solutions-io` |
 | **GCP Project** | `irsb-protocol` (308207955734) |
 | **Network** | Sepolia testnet (chain ID: 11155111) |
-| **Repos** | 4 (protocol, solver, watchtower, agent-passkey) |
+| **Repos** | 5 (protocol, solver, watchtower, agents, agent-passkey) |
 | **License** | MIT |
 | **Primary positioning** | On-chain guardrails for AI agents |
 
@@ -213,9 +213,10 @@ Cloud KMS → (signing) → solver, watchtower
 
 | Repo | Test Command | Coverage |
 |------|--------------|----------|
-| `protocol/` | `forge test` | 448 tests |
+| `protocol/` | `forge test` | 552 tests |
 | `solver/` | `pnpm test` | vitest |
 | `watchtower/` | `pnpm test` | vitest |
+| `agents/` | `pytest tests/ -v` | pytest |
 | `agent-passkey/` | `pnpm test` | vitest |
 
 ## Environment Variables
@@ -270,16 +271,18 @@ Cloud KMS → (signing) → solver, watchtower
 | `irsb-protocol` | https://github.com/intent-solutions-io/irsb-protocol | Solidity, Foundry |
 | `irsb-solver` | https://github.com/intent-solutions-io/irsb-solver | TypeScript, Node.js |
 | `irsb-watchtower` | https://github.com/intent-solutions-io/irsb-watchtower | TypeScript, Node.js |
+| `irsb-agents` | https://github.com/intent-solutions-io/irsb-agents | Python, FastAPI, LangChain |
 | `irsb-agent-passkey` | https://github.com/intent-solutions-io/irsb-agent-passkey | TypeScript, Fastify |
 
 ## Local Workspace Structure
 
 ```text
 ~/000-projects/irsb/
-├── protocol/           # On-chain Solidity contracts
-├── solver/             # Reference off-chain solver
-├── watchtower/         # Monitoring and dispute service
-├── agent-passkey/      # Policy-gated signing gateway
+├── protocol/           # On-chain Solidity contracts (v1.4.0)
+├── solver/             # Reference off-chain solver (v0.3.0)
+├── watchtower/         # Monitoring and dispute service (v0.5.0)
+├── agents/             # AI agents with RAG + Z3 verification (v0.2.0)
+├── agent-passkey/      # Policy-gated signing gateway (DEPRECATED)
 ├── CLAUDE.md           # Workspace-level guidance
 └── AI-CONTEXT.md       # This file
 ```

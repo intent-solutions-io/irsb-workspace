@@ -11,9 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Project | Tech Stack | Purpose | Status |
 |---------|------------|---------|--------|
 | `protocol/` | Solidity 0.8.25, Foundry | On-chain contracts (receipts, bonds, disputes, escrow) | Deployed (Sepolia) |
-| `solver/` | TypeScript, Express | Execute intents, produce evidence, submit receipts | v0.2.0 |
-| `watchtower/` | TypeScript, Fastify (pnpm monorepo) | Monitor receipts, detect violations, file disputes | v0.4.0 |
-| `agents/` | Python 3.11+, FastAPI, LangChain, ChromaDB | AI agents (builder + money) with RAG knowledge base | Phase 1 |
+| `solver/` | TypeScript, Express | Execute intents, produce evidence, submit receipts | v0.3.0 |
+| `watchtower/` | TypeScript, Fastify (pnpm monorepo) | Monitor receipts, detect violations, file disputes | v0.5.0 |
+| `agents/` | Python 3.11+, FastAPI, LangChain, ChromaDB | AI agents (builder + money) with RAG + Z3 verification | v0.2.0 |
 | `agent-passkey/` | TypeScript, Fastify | Policy-gated signing via Lit Protocol PKP | Deprecated (Cloud Run, legacy) |
 
 ## Build, Test, Lint Commands
@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 cd protocol/
 forge build                           # Compile (via_ir, optimizer 200 runs)
-forge test                            # All 448 tests
+forge test                            # All 552 tests
 forge test -vvv                       # Verbose output
 forge test --match-test testSlashing  # Single test by name
 forge test --match-path "test/EscrowVault.t.sol"  # Single test file

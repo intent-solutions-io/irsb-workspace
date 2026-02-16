@@ -212,7 +212,7 @@ All stateful contracts implement defense-in-depth:
 
 ### Testing
 
-- **448 Foundry tests** covering all contracts and edge cases
+- **552 Foundry tests** covering all contracts and edge cases
 - **CI fuzz profile** with 10,000 runs per fuzz test (vs 256 default)
 - **Enforcer-specific test suites** for each caveat enforcer
 - **Dual attestation tests** for ReceiptV2 (EIP-712 co-signatures)
